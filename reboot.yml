@@ -1,0 +1,24 @@
+---
+
+- name: reboot server
+  reboot:
+    reboot_timeout: 1800
+  become: true
+  delegate_to: "{{ item }}"
+  when: "( item != swarm_lead )"
+  with_inventory_hostnames:
+     - dk
+      
+- name: wait for host to finish reboot
+  wait_for:
+    port: "{{ (ansible_port|default(ansible_ssh_port))|default(22) }}"
+    host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+    search_regex: OpenSSH
+    delay: 20  
+  connection: local
+     
+- name: Check the uptime post reboot
+  shell: uptime
+  register: UPTIME
+
+- debug: msg={{UPTIME.stdout}}

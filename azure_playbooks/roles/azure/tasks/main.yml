@@ -1,0 +1,12 @@
+---
+
+- debug: msg="{{ ansible_distribution }}"
+
+- fail:
+    msg: "Patching not need"
+  when: confirm == 'no'
+
+- name: include os specific common tasks
+  include_tasks: "{{ ansible_distribution }}_setup.yml"
+
+  

@@ -1,0 +1,87 @@
+---
+- name: inspecting docker swarm
+  shell: docker node ls
+  register: swarm_info
+  no_log: yes
+  become: true
+  ignore_errors: yes
+  check_mode: no
+- shell: docker node inspect "{{ item }}"  --format '{% raw %}{{ .ManagerStatus.Leader }}{% endraw %}' 
+  register: node12
+  become: true
+  with_items:
+   - "{{ swarm_info.stdout_lines[1].split()[0] }}"
+   - "{{ swarm_info.stdout_lines[2].split()[0] }}"
+   - "{{ swarm_info.stdout_lines[3].split()[0] }}"
+
+- debug: msg="{{ node12.rc }}"
+
+- set_fact:
+   lead: "{{ inventory_hostname }}"
+  when: node12.rc == 0
+
+- debug: msg="{{ lead }}"
+
+#- debug: msg="{{ swarm_info.stdout_lines[1].split()[5] }}"
+#- set_fact:
+#    leader: "{{ item.name }}"
+#  when: item.status == 'Leader'
+#
+#- debug: msg="{{ item.name }}"
+#  with_items:
+#     - { name: '{{ swarm_info.stdout_lines[1].split()[3] }}', status: '{{ swarm_info.stdout_lines[1].split()[5] }}' }
+#     - { name: '{{ swarm_info.stdout_lines[2].split()[3] }}', status: '{{ swarm_info.stdout_lines[2].split()[5] }}' }
+#     - { name: '{{ swarm_info.stdout_lines[3].split()[3] }}', status: '{{ swarm_info.stdout_lines[3].split()[5] }}' }
+
+
+#  delegate_to: "{{ leader }}"
+
+- name: checking swarm status
+  shell: 'docker info | grep Swarm'
+  become: true
+  delegate_to: "{{ lead }}"
+  register: swarm_stat
+
+- debug: msg=" docker swarm is {{ swarm_stat.stdout_lines }}"
+#
+- name: stopping docker service
+  shell: systemctl stop docker
+  become: true
+  register: docker_status
+  delegate_to: "{{ item }}"
+  when: "( item != lead )"
+  with_inventory_hostnames:
+    - dk
+#
+#- include: update.yml
+#
+#- name: Put SELinux in permissive mode.
+#  selinux:
+#    policy: targeted
+#    state: permissive
+#  become: true
+#
+#- include: reboot.yml
+#
+#- name: reboot docker leader node
+#  reboot:
+#    reboot_timeout: 1800
+#  become: true
+#  delegate_to: "{{ leader }}"
+#
+#
+#- name: wait for host to finish reboot
+#  wait_for:
+#    port: "{{ (ansible_port|default(ansible_ssh_port))|default(22) }}"
+#    host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+#    search_regex: OpenSSH
+#    delay: 20
+#  connection: local
+#  delegate_to: "{{ leader }}"
+#
+#- name: Check the uptime post reboot
+#  shell: uptime
+#  register: UPTIME
+#  delegate_to: "{{ leader }}"
+#
+#- debug: msg={{UPTIME.stdout}}

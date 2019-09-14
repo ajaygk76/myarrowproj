@@ -1,0 +1,47 @@
+---
+- debug:
+    msg:
+      - "{{ ansible_distribution }}"
+      - "{{ ansible_distribution_version }}"
+
+
+- name: verifying the applaication/db process are not running
+  shell: if ps -eaf | egrep 'apache|httpd'|grep -v grep > /dev/null ; then echo 'process_running'; else echo 'process_not_running' ; fi
+  ignore_errors: true
+  register: app_process_check
+
+- debug: msg="{{ app_process_check.stdout }}"
+
+- name: decision point to start patching
+  fail:
+    msg: "{{ inventory hostname }} has running application. please stop the application first, then attempt patching"
+  when: app_process_check.stdout == "process_running"
+
+- name: Reboot the machine
+  shell: nohup bash -c "sleep 2s && shutdown -r now" &
+  become: true
+
+- name: Wait for machine to come back
+  wait_for_connection:
+    timeout: 240
+    delay: 20
+  
+#- name: test msg
+ # command: 'whoami'
+  #become: yes
+
+- name: upgrades packages on the server
+  yum:
+    name: "httpd"
+    state: latest
+    exclude: "kernel"
+  when: app_process_check.stdout == "process_not_running"
+  become: true
+  register: yum_update
+
+#- include_tasks: gm.yml
+
+#- name: Reboot a slow machine that might have lots of updates to apply
+#  reboot:
+#    reboot_timeout: 3600
+#  become: true

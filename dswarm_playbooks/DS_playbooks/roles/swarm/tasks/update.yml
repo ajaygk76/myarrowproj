@@ -1,0 +1,8 @@
+# updating packages
+---
+
+- name: upgrade all packages, excluding mongo kafka docker iptables container runc and java.
+  yum:
+    name: '*'
+    state: latest
+    exclude: kernel*,foo*,java*,mongo*,docker*,iptables*container*,runc*

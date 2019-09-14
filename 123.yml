@@ -1,0 +1,14 @@
+---
+- hosts: web
+  tasks:
+    - name: inspecting docker swarm
+      shell: docker node ls
+      register: swarm_info
+      become: true
+      ignore_errors: yes
+      no_log: true
+      check_mode: no
+
+    - debug:
+        msg:
+          - "{{ swarm_info }}"

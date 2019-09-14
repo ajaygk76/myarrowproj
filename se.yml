@@ -1,0 +1,15 @@
+---
+- hosts: 13.67.107.234
+  become_user: root
+  tasks:
+    - name: Put SELinux in permissive mode, logging actions that would be blocked.
+      selinux:
+         policy: targeted
+         state: permissive
+      become: yes
+    
+    - command: /usr/sbin/sestatus
+      register: seresult
+   
+    - debug: msg="{{ seresult.stdout_lines.4 }}"
+

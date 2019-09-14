@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become_user: root
+  become: true
+
+  tasks:
+
+    - name: checking the status of kafka
+      service_facts:
+
+    - debug: 
+         msg:
+           - " kafka service is {{ ansible_facts.services['confluent-kafka.service'].state }}"
+           - " confluent-zookeeper.service is {{ ansible_facts.services['confluent-zookeeper.service'].state }}"
+      
+    - name: rebooting the servers
+      reboot:
+        reboot_timeout: 3600
+      become: true
+
+    - name: waiting for host to finish reboot
+      wait_for:
+        port: "{{ (ansible_port|default(ansible_ssh_port))|default(22) }}"
+        host: "{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}"
+        search_regex: OpenSSH
+        delay: 10
+      connection: local
+     
+    - name: checking the status of kafka
+      service_facts:
+
+    - debug:
+         msg:
+           - " kafka service is {{ ansible_facts.services['confluent-kafka.service'].state }}"
+           - " confluent-zookeeper.service is {{ ansible_facts.services['confluent-zookeeper.service'].state }}"
+
+    - name: Verifying the status of service confluent-kafka-connect
+ 
+
+
+
+
+
+     
+

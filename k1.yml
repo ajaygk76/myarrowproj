@@ -1,0 +1,52 @@
+---
+- hosts: dk
+  become_user: root
+
+  tasks:
+   - name: docker info
+     command: docker node inspect self --pretty
+     become: true
+     register: docker_info
+     
+   - set_fact:
+       swarm_lead: "{{ inventory_hostname }}"
+     when: docker_info.stdout_lines.10 == " Leader:\t\tYes"
+     
+   - debug: msg=" Leader is {{ swarm_lead }}"
+     delegate_to: "{{ swarm_lead }}"
+     
+     
+   - name: checking swarm status
+     shell: 'docker info | grep Swarm'
+     become: true
+     delegate_to: "{{ swarm_lead }}"
+     register: swarm_stat
+
+   - debug: msg=" docker swarm is {{ swarm_stat.stdout_lines }}"
+   
+   - name: stopping docker service
+     shell: systemctl stop docker
+     become: true
+     register: docker_status
+     delegate_to: "{{ item }}"
+     when: "( item != swarm_lead )"
+     with_inventory_hostnames:
+      - dk
+
+   - include: update.yml
+   
+   - name: Put SELinux in permissive mode.
+     selinux:
+      policy: targeted
+      state: permissive
+     become: true
+
+   - include: reboot.yml
+
+   - name: reboot docker leader node
+     reboot:
+       reboot_timeout: 1800
+     become: true
+     delegate_to: "{{ swarm_lead }}"
+     
+   - include: reboot.yml

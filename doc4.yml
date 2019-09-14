@@ -1,0 +1,54 @@
+---
+- hosts: web
+  become_user: root
+
+  tasks:
+    - name: inspecting docker swarm
+      shell: docker node ls
+      register: swarm_info
+      become: true
+      ignore_errors: yes
+
+    - debug: msg="{{ swarm_info.stdout_lines[1].split()[5] }}"
+         
+
+    - set_fact:
+        swarm_leader: "{{ item.name }}"
+      when: item.status == 'Leader'
+      with_items:
+        - { name: '{{ swarm_info.stdout_lines[1].split()[2] }}', status: '{{ swarm_info.stdout_lines[1].split()[5] }}' }
+        - { name: '{{ swarm_info.stdout_lines[2].split()[2] }}', status: '{{ swarm_info.stdout_lines[2].split()[5] }}' }
+        - { name: '{{ swarm_info.stdout_lines[3].split()[2] }}', status: '{{ swarm_info.stdout_lines[3].split()[5] }}' }
+
+    - debug: msg="{{ swarm_leader }} is leader"
+      delegate_to: "{{ swarm_leader }}"
+      ignore_errors: true
+ 
+    - name: checking swarm status
+      shell: 'docker info | grep Swarm'
+      register: swarm_stat
+      ignore_errors: yes
+      delegate_to: "{{ swarm_leader }}"
+      become: true
+
+    - debug: 
+        msg:
+          - "{{ ansible_hostname }}"
+          - "{{ swarm_leader }}"
+          - "{{ inventory_hostname }}"
+      run_once: true
+
+    - debug: msg=" docker swarm is {{ swarm_stat.stdout_lines.0.split()[1] }}"
+      #when: inventory_hostname == swarm_leader
+      delegate_to: "{{ swarm_leader }}"
+
+    - name: stopping docker service
+      shell: systemctl stop docker
+      become: true
+      register: docker_status
+      delegate_to: "{{ item }}"
+      when: "( item != swarm_leader )"
+      with_inventory_hostnames:
+        - dk
+
+    - include: update.yml

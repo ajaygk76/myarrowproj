@@ -1,0 +1,13 @@
+---
+- hosts: dk
+  become_user: root
+  tasks:
+    - name: Start service mongod, if not started
+      service:
+        name: mongod
+        state: started
+      check_mode: yes
+      register: mongod_stat1
+      become: true
+    - debug: msg="{{ mongod_stat1 }}"
+ 

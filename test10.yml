@@ -1,0 +1,40 @@
+---
+- hosts: all
+  become_user: root
+  ignore_unreachable: true
+  tasks:
+
+    - name: Get Leader nodes ID's
+      shell: docker node ls -f "role=manager"  --format '{% raw %}{{.ID}}{% endraw %}'
+      ignore_errors: true
+      register: swarm_leaders_info
+      no_log: true
+      become: true
+
+    - set_fact:
+         leadernodes: "{{ leadernodes|default([]) + [ item ] }}"
+      with_items:
+        -  "{{ swarm_leaders_info.stdout }}"
+      when: item != ""
+      ignore_errors: true
+
+    - name: Getting worker nodes ID's
+      shell: docker node ls -f "role=worker"  --format '{% raw %}{{.ID}}{% endraw %}'
+      ignore_errors: true
+      register: swarm_workers_info
+      no_log: true
+      become: true
+
+    - set_fact:
+         workernodes: "{{ workernodes|default([]) + [ item ] }}"
+      with_items:
+        -  "{{ swarm_workers_info.stdout }}"
+      when: item != ""
+      ignore_errors: true
+
+    - debug:
+        msg:
+          - "{{ leadernodes }}"
+          - "{{ workernodes }}"
+      ignore_errors: true
+

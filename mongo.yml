@@ -1,0 +1,25 @@
+---
+- hosts: all
+  tasks:
+    - name: Start service httpd, if not started
+      service:
+        name: mongod
+        state: started
+      register: mongod_stat1
+      
+    - debug: msg="{{ mongod_stat1 }}"
+    
+    - block:
+    
+        - name: removing temp file
+          file: path='/tmp/mongodb-*' state=absent
+
+        - name: Start service httpd, if not started
+          service:
+            name: mongod
+            state: started
+          register: mongod_stat2
+      
+        - debug: msg="{{ mongod_stat2 }}"
+      
+      when: mongod_stat1.state == 'started'

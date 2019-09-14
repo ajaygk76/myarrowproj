@@ -1,0 +1,27 @@
+---
+- hosts: dk
+  become_user: root
+
+  tasks:
+  
+    
+    - name: checking docker running
+      shell: systemctl status docker
+      become: true
+      ignore_errors: true
+      no_log: true
+      register: result
+
+  
+    - block:
+    
+        - name: inspecting docker swarm
+          shell: docker node ls
+          register: swarm_info
+          become: true
+          ignore_errors: yes
+    
+        # - debug: msg="{{ swarm_info.stdout_lines[1].split()[5] }}"
+        - debug: msg="{{ test}}"
+        
+      when: result.rc == 0

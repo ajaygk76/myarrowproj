@@ -1,0 +1,33 @@
+---
+- hosts: web
+  become_user: root
+  tasks:
+    - name: inspecting docker swarm
+      shell: docker node ls
+      register: swarm_info
+      no_log: yes
+      become: true
+      ignore_errors: yes
+         
+
+    #- shell: docker node inspect {{ item.title }} --format {{ .ManagerStatus.Leader }}
+    #- shell: docker node inspect "{{ item.title }}" --format '{% raw %}{{ .ManagerStatus.Leader }}{% endraw %}' > /tmp/Leader
+    #  register: stat
+    #  become: true      
+    - debug:
+        msg:
+          - "{{ swarm_info.stdout_lines[1].split()[4] }}"
+          - '{{ swarm_info.stdout_lines[1].split()[2] }}'
+          - '{{ swarm_info.stdout_lines[1].split()[4] }}'
+    - set_fact:
+        Leader: "{{ item.name }}"
+      when: item.status == 'Leader'
+      with_items:
+        - { name: '{{ swarm_info.stdout_lines[1].split()[1] }}', status: '{{ swarm_info.stdout_lines[1].split()[4] }}' }
+        - { name: '{{ swarm_info.stdout_lines[2].split()[1] }}', status: '{{ swarm_info.stdout_lines[2].split()[4] }}' }
+        - { name: '{{ swarm_info.stdout_lines[3].split()[1] }}', status: '{{ swarm_info.stdout_lines[3].split()[4] }}' }
+     
+        # - "{{ stat.results.2.stdout_lines }}"
+    - debug: 
+        msg: 
+          - "{{ Leader }}"

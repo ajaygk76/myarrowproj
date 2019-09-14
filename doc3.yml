@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become_user: root
+  tasks:
+    - name: checking docker running
+      shell: systemctl status docker
+      become: true
+      ignore_errors: true
+      no_log: true
+      register: result
+
+
+    - debug: msg="{{ result.rc }}"

@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become_user: root
+
+  tasks: 
+    - debug:
+          msg:
+            - "{{ item.name }} is leader"
+            #- "{{ item.title.split()[4] }}"
+            #- "{{ swarm_info.stdout_lines.2.split()[5] }}"
+            #- "{{ swarm_info.stdout_lines.1 }}"
+       when: item.title.split()[4] == 'Active'
+        #when:  not swarm_info.stdout_lines[1].split()[5] and  swarm_info.stdout_lines[1].split()[5] == 'Leader'
+        #when:  item.title == 'Leader'
+       with_items:
+          - { name: '{{ swarm_info.stdout_lines[1].split()[2] }}', title: '{{ swarm_info.stdout_lines.1 }}' }
+          - { name: '{{ swarm_info.stdout_lines[2].split()[2] }}', title: '{{ swarm_info.stdout_lines.2 }}' }
+          - { name: '{{ swarm_info.stdout_lines[3].split()[2] }}', title: '{{ swarm_info.stdout_lines.3 }}' }

@@ -1,0 +1,91 @@
+---
+- hosts: db
+  tasks:
+    - name: checking mongodb status
+      shell:  ps -ef|grep -i mongod|grep -v grep|wc -l
+      register: mongo_status
+      
+    - debug: msg="{{ mongo_status.stdout }}" 
+      
+    - block:
+        
+        - name: stopping mongodb service
+          service:
+            name: mongod
+            state: stopped
+          register: mongod_stop_status
+          become: true
+          
+        - debug: msg="{{ mongod_stop_status.state }}"
+          
+        - block:
+          
+            - name: checking mongod process running
+              shell: "ps -ef | grep -v grep | grep -w mongod | awk '{print $2}'"
+              register: mongod_process
+            
+            - name: Kill running processes
+              shell: "kill -9 {{ item }}"
+              with_items: "{{ mongod_process.stdout_lines }}"
+              become: true
+              
+          rescue:
+            - fail:
+                msg: Unable to stop mongodb
+            
+          when: mongod_stop_status.state == 'stopped'
+          
+      when: mongo_status.stdout != '0'    
+          
+    - name: upgrade all packages, excluding mongo kafka docker iptables container runc and java.
+      yum:
+        name: '*'
+        state: latest
+        exclude: kernel*,foo*,java*,mongo*,docker*,iptables*container*,runc*
+                
+    - name: reboot server
+      reboot:
+        reboot_timeout: 3600
+      become: true
+      
+    - name: wait for host to finish reboot
+      wait_for:
+        port: "{{ (ansible_port|default(ansible_ssh_port))|default(22) }}"
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        search_regex: OpenSSH
+        delay: 20  
+      connection: local
+     
+    - name: Check the uptime post reboot
+      shell: uptime
+      register: UPTIME
+
+    - debug: msg={{UPTIME.stdout}}
+    
+    - name: Checking mongodb status
+      command: systemctl status mongod
+      register: mongod_start
+      
+    - debug: msg="{{ mongod_start }}"
+    
+    - name: Start service httpd, if not started
+      service:
+        name: mongod
+        state: started
+      register: mongod_stat1
+      
+    - debug: msg="{{ mongod_stat1 }}"
+    
+    - block:
+    
+        - name: removing temp file
+          file: path='/tmp/mongodb-*' state=absent
+
+        - name: Start service mongod if not started
+          service:
+            name: mongod
+            state: started
+      
+        - debug: msg="{{ mongod_stat2 }}"
+         
+      when: mongod_stat1.state != 'started'

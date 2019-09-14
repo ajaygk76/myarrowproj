@@ -1,0 +1,49 @@
+---
+- hosts: all
+  become_user: root
+
+  tasks:
+
+      - name: inspecting docker swarm
+        #shell: docker node ls #--format \{\{'.Hostname'\}\} \{\{'.ManagerStatus'\}\}
+        shell: docker node ls --format="{% raw %}'{{json .Hostname}}' '{{json .ManagerStatus}}'{% endraw %}"
+        #shell: docker node ls
+        register: swarm_info
+        no_log: yes
+        become: true
+
+      - name: inspecting docker swarm lead
+        shell: docker node ls -f 'role=manager' -q
+        become: true
+
+      #- debug: msg="{{ swarm_info.stdout_lines[1].split()[2] }}   {{ swarm_info.stdout_lines[1].split()[5] }}"
+      - debug:
+           msg:
+             - "{{ swarm_info.stdout_lines }}"
+             - "{{ swarm_info.stdout_lines.1.split()[0] }}"
+             - "{{ swarm_info.stdout_lines[1].split()[4] }}"
+             - "{{ swarm_info.stdout_lines[2].split()[4] }}"
+     
+
+
+      - name: find swarm leader
+        shell: docker ps -a --filter "name={{IMAGE}}" --format \{\{'ID'\}\}
+        register: swarm_lead
+       # with_items:
+        #  - { name: '{{ swarm_info.stdout_lines[1].split()[0] }}', title: '{{ swarm_info.stdout_lines.1 }}' }
+     # - debug: 
+      #    msg: 
+       #     - "{{ swarm_lead }}"
+        #    - "{{ item.name }} is leader"
+            #- "{{ item.title.split()[4] }}"
+            #- "{{ swarm_info.stdout_lines.2.split()[5] }}"
+            #- "{{ swarm_info.stdout_lines.1 }}"
+        #when: item.title.split()[5] == 'Active' and item.title.split()[3] == 'Ready'
+        #when:  not swarm_info.stdout_lines[1].split()[5] and  swarm_info.stdout_lines[1].split()[5] == 'Leader'
+        #when:  item.title == 'Leader'
+        with_items:
+          - { name: '{{ swarm_info.stdout_lines[1].split()[0] }}', title: '{{ swarm_info.stdout_lines.1 }}' }
+          - { name: '{{ swarm_info.stdout_lines[2].split()[0] }}', title: '{{ swarm_info.stdout_lines.2 }}' }
+          - { name: '{{ swarm_info.stdout_lines[3].split()[0] }}', title: '{{ swarm_info.stdout_lines.3 }}' }
+        #  - { name: swarm_info.stdout_lines[2].split()[2], title: swarm_info.stdout_lines[2].split()[5] }
+      - debug: msg="{{ swarm_lead }}"

@@ -1,0 +1,24 @@
+---
+- hosts: web
+  gather_facts: false
+  become_user: root
+
+  tasks:
+
+     - name: determine swarm status
+       shell: " docker info | grep -i swarm"
+       register: swarm_status
+       #delegate_to: 40.117.154.231
+       #remote_user: root
+       become: true
+     
+     - debug:
+          msg: "The status of{{swarm_status.stdout }}"
+       when: inventory_hostname == 'dkmanager.testlab.com'
+
+
+
+
+
+     
+

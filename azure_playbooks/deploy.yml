@@ -1,0 +1,16 @@
+---
+
+- hosts: "{{ cli_inv }}"
+  become: yes
+  become_user: root
+
+
+  vars_prompt:
+    - name: confirm
+      prompt: "need patching?"
+      private: no
+
+
+
+  roles:
+    - { role: azure }

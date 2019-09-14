@@ -1,0 +1,20 @@
+---
+- hosts: all
+  become_user: root
+
+  tasks:
+
+       - name: inspecting docker swarm lead
+         shell: docker node ls -f 'role=manager' -q
+         become: true
+         register: swarm_info
+
+       - name: inspecting docker swarm leader
+         shell: docker node inspect --format '{% raw %}{{ .Status.Addr }}{% endraw %}' "{{ swarm_info.stdout }}"
+         become: true
+         run_once: true
+         register: swarm_infol
+
+       - debug:
+            msg:
+              - "{{ swarm_infol.stdout }}"

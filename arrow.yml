@@ -1,0 +1,31 @@
+---
+- hosts: dk
+  become_user: root
+
+  tasks:
+    - name: inspecting docker swarm
+      shell: docker node ls
+      register: swarm_info
+      no_log: yes
+      become: true
+      ignore_errors: yes
+
+    - debug:
+        msg:
+          - '{{ swarm_info.stdout_lines[1].split()[4] }}'
+          #- '{{ swarm_info.stdout_lines[2].split()[4] }}'
+          #- '{{ swarm_info.stdout_lines[3].split()[4] }}'
+
+    - set_fact:
+        Leader: "{{ item.name }}"
+      when: item.status == 'Leader'
+      with_items:
+        - { name: '{{ swarm_info.stdout_lines[1].split()[2] }}', status: '{{ swarm_info.stdout_lines[1].split()[5] }}' }
+        - { name: '{{ swarm_info.stdout_lines[2].split()[2] }}', status: '{{ swarm_info.stdout_lines[2].split()[5] }}' }
+        - { name: '{{ swarm_info.stdout_lines[3].split()[2] }}', status: '{{ swarm_info.stdout_lines[3].split()[5] }}' }
+
+    - debug:
+        msg:
+          - "{{ Leader }} is the Leader"
+      ignore_errors: yes
+      run_once: true 

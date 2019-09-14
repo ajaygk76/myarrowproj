@@ -1,0 +1,12 @@
+---
+- name: Sending an e-mail using Gmail SMTP servers
+  mail:
+    host: email.trv.ust-global.com
+    port: 25
+    secure: starttls
+    #charset: utf-8   
+    username: pratheesh.prabhakaranassarigirija@ust-global.com
+    password: April@123
+    to: pgpratheesh@gmail.com
+    subject: Ansible-report
+    body: System {{ ansible_hostname }} has been successfully provisioned.

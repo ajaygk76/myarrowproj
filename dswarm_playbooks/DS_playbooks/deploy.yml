@@ -1,0 +1,9 @@
+---
+
+- hosts: all
+  become_user: root
+  
+  roles:
+    - { role: swarm, when: "'dk' in group_names" }    
+#- { role: swarm, inventory_group == "dk" }
+ #   - { role: mongo, inventory_group == "web" }
